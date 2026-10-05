@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Put It In Order! A 5-minute algorithm game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FFFFFF; --panel:#FFFFFF; --ink:#2B1B4A; --soft:#5A4A7A;
+  --c1:#8E5CFF; --c2:#FF5C8A; --c3:#00B4D8; --c4:#FF8C1A; --c5:#2EC27E; --c6:#3D7BFF; --c7:#E040C8;
+  --ok:#14A06A; --bad:#E5383B; --scene:#FFF3B8; --chipink:#fff;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Nunito,"Segoe UI",system-ui,sans-serif;font-size:1.05rem;line-height:1.5}
+.wrap{max-width:1140px;margin:0 auto;padding:1.4rem 1.2rem 3rem}
+h1,h2,h3{font-family:Fredoka,Nunito,system-ui,sans-serif;margin:0;line-height:1.08}
+h1{font-size:clamp(2.3rem,6vw,4rem);font-weight:700}
+h2{font-size:1.4rem;font-weight:700}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+.lead{margin:.5rem 0 0;max-width:64ch;font-size:1.15rem}
+.def{display:inline-block;margin-top:.8rem;background:var(--c1);color:#fff;font-weight:800;padding:.5rem 1rem;border-radius:16px;transform:rotate(-1deg);box-shadow:0 4px 0 rgba(0,0,0,.18)}
+
+.rounds{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.5rem 0 1rem}
+.rd{border:3px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:999px;padding:.35rem 1.1rem;font-weight:800}
+.rd[aria-pressed="true"]{background:var(--ink);color:var(--panel)}
+
+.game{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.85fr);gap:1.1rem;align-items:start}
+.card{background:var(--panel);border:3px solid #E6DEFF;border-radius:24px;padding:1.1rem;box-shadow:0 7px 0 #E6DEFF}
+.card h2{margin-bottom:.3rem}
+.sub{color:var(--soft);margin:0 0 .8rem;font-size:.95rem}
+
+.pool{display:grid;gap:.55rem}
+.step{border:none;border-radius:16px;padding:.65rem .85rem;color:var(--chipink);font-weight:800;text-align:left;display:flex;gap:.6rem;align-items:center;box-shadow:0 4px 0 rgba(0,0,0,.18);transition:transform .12s}
+.step:hover{transform:translateY(-2px)}
+.step:active{transform:translateY(2px)}
+.step .em{font-size:1.4rem;line-height:1}
+.step.used{opacity:.25;pointer-events:none}
+
+ol.algo{list-style:none;margin:0;padding:.6rem;min-height:220px;border:3px dashed color-mix(in srgb,var(--ink) 30%,transparent);border-radius:18px;display:grid;gap:.5rem;align-content:start;counter-reset:n}
+ol.algo:empty::before{content:"Tap the steps on the left to add them here, in order.";color:var(--soft)}
+.row{counter-increment:n;display:grid;grid-template-columns:2rem 1fr auto;gap:.5rem;align-items:center;border-radius:14px;padding:.45rem .5rem;color:var(--chipink);font-weight:800;box-shadow:0 3px 0 rgba(0,0,0,.16)}
+.row::before{content:counter(n);background:rgba(255,255,255,.35);border-radius:50%;width:1.8rem;height:1.8rem;display:grid;place-items:center;font-family:Fredoka,sans-serif}
+.row.now{outline:4px solid var(--ink);transform:scale(1.03)}
+.row.err{outline:4px solid var(--bad);animation:shake .4s}
+.row.done{opacity:.75}
+.tools{display:flex;gap:.2rem}
+.tools button{border:none;background:rgba(255,255,255,.3);color:inherit;border-radius:8px;width:1.9rem;height:1.9rem;font-weight:800;line-height:1}
+.tools button:disabled{opacity:.35;cursor:not-allowed}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+.actions{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.9rem}
+.btn{border:3px solid var(--ink);background:var(--panel);color:var(--ink);border-radius:999px;padding:.45rem 1.1rem;font-weight:800}
+.btn.go{background:var(--ok);border-color:var(--ok);color:#fff;font-size:1.15rem;padding:.5rem 1.6rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.scene{background:var(--scene);border-radius:20px;display:grid;place-items:center;text-align:center;padding:1.2rem .8rem;min-height:220px}
+.big{font-size:clamp(4rem,10vw,6rem);line-height:1;transition:transform .25s}
+.big.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(.6)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.caption{font-weight:800;margin-top:.6rem;min-height:1.5em}
+.msg{margin-top:.9rem;padding:.8rem 1rem;border-radius:16px;font-weight:700}
+.msg.ok{background:color-mix(in srgb,var(--ok) 18%,var(--panel));border:3px solid var(--ok)}
+.msg.bad{background:color-mix(in srgb,var(--bad) 14%,var(--panel));border:3px solid var(--bad)}
+.msg:empty{display:none}
+
+.learn{margin-top:1.8rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem}
+.learn div{border-radius:22px;padding:1rem 1.1rem;color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.15)}
+.learn h3{font-size:1.25rem;margin-bottom:.25rem}
+.learn p{margin:0}
+.l1{background:#8E5CFF}.l2{background:#FF5C8A}.l3{background:#00A0C4}.l4{background:#E06A00}
+details.guide{margin-top:1.5rem;background:var(--panel);border:3px solid #E6DEFF;border-radius:20px;padding:.9rem 1.2rem}
+details.guide summary{font-weight:800;cursor:pointer}
+details.guide ol{margin:.6rem 0 0;padding-left:1.3rem}
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.confetti i{position:absolute;top:-20px;width:10px;height:16px;border-radius:3px;animation:fall 1.6s linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+[hidden]{display:none!important}
+
+@media (max-width:900px){
+  .game{grid-template-columns:1fr 1fr}
+  .scenecard{grid-column:1 / -1}
+}
+@media (max-width:600px){ .game{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Put it in order! 🧩</h1>
+    <p class="lead">Each round has a simple everyday task. The steps are all mixed up, and one of them is a silly step that doesn't belong. Build the algorithm by putting only the right steps in the right order, then press Run to see what happens.</p>
+    <span class="def">An algorithm is a list of clear steps, in the right order, that solves a problem.</span>
+  </header>
+
+  <nav class="rounds" id="rounds" aria-label="Choose a round"></nav>
+
+  <div class="game">
+    <section class="card" aria-labelledby="poolTitle">
+      <h2 id="poolTitle">Mixed-up steps</h2>
+      <p class="sub">Tap a step to add it to your algorithm. Careful: one step doesn't belong!</p>
+      <div class="pool" id="pool"></div>
+    </section>
+
+    <section class="card" aria-labelledby="algoTitle">
+      <h2 id="algoTitle">Your algorithm</h2>
+      <p class="sub">Use ↑ ↓ to move a step and ✕ to remove it.</p>
+      <ol class="algo" id="algo" aria-live="polite"></ol>
+      <div class="actions">
+        <button class="btn go" id="run">▶ Run</button>
+        <button class="btn" id="clear">Start over</button>
+      </div>
+    </section>
+
+    <section class="card scenecard" aria-labelledby="sceneTitle">
+      <h2 id="sceneTitle">What happens</h2>
+      <div class="scene">
+        <div>
+          <div class="big" id="big" aria-hidden="true"></div>
+          <div class="caption" id="caption"></div>
+        </div>
+      </div>
+      <div class="msg" id="msg" role="status"></div>
+    </section>
+  </div>
+
+  <section class="learn" aria-label="What we learned">
+    <div class="l1"><h3>Right order</h3><p>Boil the water before adding tea. Steps that depend on each other must come in order.</p></div>
+    <div class="l2"><h3>No missing steps</h3><p>Skip one step and the task fails, even if everything else is perfect.</p></div>
+    <div class="l3"><h3>No extra steps</h3><p>A good algorithm has only the steps that help reach the goal.</p></div>
+    <div class="l4"><h3>Sometimes order is flexible</h3><p>Milk and sugar or tea powder first? Some steps can swap, and it still works.</p></div>
+  </section>
+
+  <details class="guide">
+    <summary>How to run this in 5 minutes (for the teacher)</summary>
+    <ol>
+      <li>Share your screen and read the purple line about what an algorithm is (30 seconds).</li>
+      <li>Round 1, Chai: ask students in the chat "What's the first step?", then the next, and so on. Add steps as they say them and press Run (1.5 minutes).</li>
+      <li>Round 2, ATM: let one student dictate the full order. If it fails, ask the class which step is in the wrong place (1.5 minutes).</li>
+      <li>Round 3, Plant a seed: quick round. Ask "Which step doesn't belong?" before starting (1 minute).</li>
+      <li>Finish with the four coloured cards and ask: "What's an algorithm you follow every morning?" (30 seconds).</li>
+    </ol>
+  </details>
+</div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+
+<script>
+const ROUNDS = [
+  { name:"☕ Make chai", start:"🫖", startText:"An empty pan is waiting…", end:"☕", endText:"Hot chai is ready!",
+    lesson:"Order matters: boiling has to happen before the tea powder goes in.",
+    steps:[
+      {id:"a", em:"💧", text:"Pour water into a pan", needs:[]},
+      {id:"b", em:"🔥", text:"Put the pan on the stove and switch it on", needs:[]},
+      {id:"c", em:"♨️", text:"Wait till the water boils", needs:["a","b"], fail:"Waiting… and waiting… Nothing is boiling! Is there water in the pan, and is the stove on?"},
+      {id:"d", em:"🍃", text:"Add tea powder", needs:["c"], fail:"Tea powder in cold water? That's not chai! The water has to boil first. 🥶"},
+      {id:"e", em:"🥛", text:"Add milk and sugar", needs:["c"], fail:"Milk and sugar in a cold pan? Boil the water first."},
+      {id:"f", em:"🫗", text:"Strain the chai into a cup", needs:["d","e"], fail:"Straining… but the chai isn't ready yet! Something is missing before this step."},
+      {id:"x", em:"🧊", text:"Put the cup in the fridge", silly:true, fail:"Cold chai?! That step doesn't help reach the goal. Remove it."}
+    ]},
+  { name:"🏧 Take money from an ATM", start:"🏧", startText:"The ATM says: Welcome!", end:"💵", endText:"Cash in hand, card in pocket!",
+    lesson:"Each step unlocks the next one. Skip one and the machine can't continue.",
+    steps:[
+      {id:"a", em:"💳", text:"Insert your ATM card", needs:[]},
+      {id:"b", em:"🔢", text:"Enter your 4-digit PIN", needs:["a"], fail:"The ATM asks: \"Whose PIN is this?\" Insert the card first!"},
+      {id:"c", em:"📋", text:"Choose 'Cash withdrawal'", needs:["b"], fail:"The ATM won't show any options until you enter your PIN."},
+      {id:"d", em:"💰", text:"Enter the amount", needs:["c"], fail:"An amount for what? Choose 'Cash withdrawal' first."},
+      {id:"e", em:"💵", text:"Collect your cash", needs:["d"], fail:"No cash comes out. The ATM doesn't know how much you want yet!"},
+      {id:"f", em:"👛", text:"Take back your card", needs:["d"], fail:"Leaving so soon? You haven't taken out any money yet!"},
+      {id:"x", em:"🙊", text:"Tell your PIN to the person behind you", silly:true, fail:"Never! That step is unsafe and doesn't help reach the goal. Remove it."}
+    ]},
+  { name:"🌱 Plant a seed", start:"🪴", startText:"An empty pot and a seed…", end:"🌱", endText:"Your seed will sprout soon!",
+    lesson:"Even simple tasks need every step. Missing one, like watering, means no plant.",
+    steps:[
+      {id:"a", em:"🪴", text:"Fill a pot with soil", needs:[]},
+      {id:"b", em:"👆", text:"Make a small hole in the soil", needs:["a"], fail:"Making a hole in… an empty pot? Add soil first!"},
+      {id:"c", em:"🌰", text:"Drop the seed into the hole", needs:["b"], fail:"Where does the seed go? There's no hole yet."},
+      {id:"d", em:"🤲", text:"Cover the seed with soil", needs:["c"], fail:"Covering… nothing? The seed isn't in the pot yet."},
+      {id:"e", em:"💧", text:"Water it gently", needs:["d"], fail:"Watering an empty pot won't grow anything. Plant the seed first!"},
+      {id:"f", em:"☀️", text:"Keep the pot in sunlight", needs:["d"], fail:"A sunny pot with no seed in it? Plant the seed first."},
+      {id:"x", em:"😬", text:"Dig the seed out every day to check on it", silly:true, fail:"Poor seed! That step would stop it from growing. Remove it."}
+    ]}
+];
+const COLORS = ["var(--c1)","var(--c2)","var(--c3)","var(--c4)","var(--c5)","var(--c6)","var(--c7)"];
+let r = 0, algo = [], running = false, order = [];
+
+const $ = id => document.getElementById(id);
+const poolEl = $("pool"), algoEl = $("algo"), big = $("big"), caption = $("caption"), msg = $("msg");
+
+function shuffle(a){ a = [...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function colorOf(id){ const i = ROUNDS[r].steps.findIndex(s=>s.id===id); return COLORS[i % COLORS.length]; }
+function step(id){ return ROUNDS[r].steps.find(s=>s.id===id); }
+
+function renderRounds(){
+  const nav = $("rounds"); nav.innerHTML = "";
+  ROUNDS.forEach((R,i)=>{
+    const b = document.createElement("button");
+    b.className = "rd"; b.textContent = `Round ${i+1}: ${R.name}`; b.setAttribute("aria-pressed", i===r);
+    b.onclick = () => { if(!running){ r = i; load(); } };
+    nav.appendChild(b);
+  });
+}
+
+function setScene(em, text){ big.textContent = em; caption.textContent = text; big.classList.remove("pop"); void big.offsetWidth; big.classList.add("pop"); }
+
+function load(){
+  algo = []; msg.textContent = ""; msg.className = "msg";
+  order = shuffle(ROUNDS[r].steps.map(s=>s.id));
+  setScene(ROUNDS[r].start, ROUNDS[r].startText);
+  renderRounds(); render();
+}
+
+function render(active=-1, err=false, doneUpTo=-1){
+  poolEl.innerHTML = "";
+  order.forEach(id=>{
+    const s = step(id), b = document.createElement("button");
+    b.className = "step" + (algo.includes(id) ? " used" : "");
+    b.style.background = colorOf(id);
+    b.innerHTML = `<span class="em" aria-hidden="true">${s.em}</span><span>${s.text}</span>`;
+    b.disabled = running || algo.includes(id);
+    b.onclick = () => { if(msg.textContent){ msg.textContent=""; msg.className="msg"; setScene(ROUNDS[r].start, ROUNDS[r].startText); } algo.push(id); render(); };
+    poolEl.appendChild(b);
+  });
+  algoEl.innerHTML = "";
+  algo.forEach((id,i)=>{
+    const s = step(id), li = document.createElement("li");
+    li.className = "row" + (i===active ? (err ? " err" : " now") : "") + (i<=doneUpTo && i!==active ? " done" : "");
+    li.style.background = colorOf(id);
+    li.innerHTML = `<span>${s.em} ${s.text}</span>`;
+    const t = document.createElement("span"); t.className = "tools";
+    [["↑",`Move "${s.text}" up`,()=>swap(i,i-1),i===0],["↓",`Move "${s.text}" down`,()=>swap(i,i+1),i===algo.length-1],["✕",`Remove "${s.text}"`,()=>{algo.splice(i,1);reset();},false]]
+      .forEach(([lab,aria,fn,dis])=>{ const b=document.createElement("button"); b.textContent=lab; b.setAttribute("aria-label",aria); b.disabled = running||dis; b.onclick=fn; t.appendChild(b); });
+    li.appendChild(t); algoEl.appendChild(li);
+  });
+  $("run").disabled = running || !algo.length;
+  $("clear").disabled = running || !algo.length;
+}
+function swap(i,j){ [algo[i],algo[j]]=[algo[j],algo[i]]; reset(); }
+function reset(){ msg.textContent=""; msg.className="msg"; setScene(ROUNDS[r].start, ROUNDS[r].startText); render(); }
+$("clear").onclick = () => { algo = []; reset(); };
+
+const wait = ms => new Promise(res=>setTimeout(res, matchMedia("(prefers-reduced-motion: reduce)").matches ? Math.min(ms,150) : ms));
+function say(t, cls){ msg.textContent = t; msg.className = "msg " + cls; }
+
+$("run").onclick = async () => {
+  if(running || !algo.length) return;
+  running = true; msg.textContent=""; msg.className="msg";
+  const done = new Set();
+  setScene(ROUNDS[r].start, ROUNDS[r].startText); render();
+  await wait(400);
+  for(let i=0;i<algo.length;i++){
+    const s = step(algo[i]);
+    render(i, false, i-1);
+    await wait(250);
+    if(s.silly || !s.needs.every(n=>done.has(n))){
+      running = false; render(i, true, i-1);
+      setScene(s.silly ? "🙈" : "😵", `Step ${i+1} went wrong`);
+      say(s.fail, "bad"); return;
+    }
+    done.add(s.id); setScene(s.em, s.text);
+    await wait(700);
+  }
+  running = false;
+  const required = ROUNDS[r].steps.filter(s=>!s.silly);
+  if(required.every(s=>done.has(s.id))){
+    render(-1,false,algo.length);
+    setScene(ROUNDS[r].end, ROUNDS[r].endText);
+    say(`🎉 Your algorithm works! ${ROUNDS[r].lesson}`, "ok"); celebrate();
+  } else {
+    render(-1,false,algo.length);
+    setScene("🤔", "Hmm… not finished");
+    say(`All your steps ran, but the task isn't complete. ${required.length - done.size === 1 ? "One step is" : "Some steps are"} missing. Which one?`, "bad");
+  }
+};
+
+function celebrate(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const c=$("confetti"), cols=["#8E5CFF","#FF5C8A","#00B4D8","#FF8C1A","#2EC27E","#3D7BFF"];
+  for(let i=0;i<70;i++){ const p=document.createElement("i"); p.style.left=Math.random()*100+"vw"; p.style.background=cols[i%cols.length]; p.style.animationDelay=Math.random()*.5+"s"; c.appendChild(p); }
+  setTimeout(()=>c.innerHTML="",2300);
+}
+load();
+</script>
+</body>
+</html>
